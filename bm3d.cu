@@ -277,12 +277,22 @@ void Bm3d::set_up_realtime(int width, int height, int channels) {
 void Bm3d::realtime_denoise(uchar *src_image,
                             uchar *dst_image
                             ) {
+    Stopwatch first_step;
+    Stopwatch sed_step;
+                            
     copy_image_to_device(src_image);
     clean_up_buffer();
+    first_step.start();
     denoise_fst_step();
+    first_step.stop();
     cudaMemset(d_transformed_stacks, 0, sizeof(cufftComplex) * h_fst_step_params.patch_size * h_fst_step_params.patch_size * h_fst_step_params.max_group_size * total_ref_patches);
+    sed_step.start();
     denoise_2nd_step();
+    sed_step.stop();
     cudaMemcpy(dst_image, d_denoised_image, sizeof(uchar) * h_width * h_height, cudaMemcpyDeviceToHost);
+    printf("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n");
+    printf("First step takes %f\n", first_step.getSeconds());
+    printf("Second step takes %f\n", sed_step.getSeconds());
 }
 
 /*
